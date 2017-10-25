@@ -10,7 +10,8 @@ main_page_head = '''
 <head>
     <meta charset="utf-8">
     <title>Fresh Tomatoes!</title>
-
+    <!-- Google font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,900">
     <!-- Bootstrap 3 -->
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap-theme.min.css">
@@ -18,7 +19,9 @@ main_page_head = '''
     <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
     <style type="text/css" media="screen">
         body {
-            padding-top: 80px;
+            font-family: Roboto, sans-serif;
+            font-weight: 300;
+            padding-top: 100px;
         }
         #trailer .modal-dialog {
             margin-top: 200px;
@@ -36,11 +39,11 @@ main_page_head = '''
             height: 100%;
         }
         .movie-tile {
-            margin-bottom: 20px;
-            padding-top: 20px;
+            margin-bottom: 30px;
+            transition:all 0.6s;
         }
         .movie-tile:hover {
-            background-color: #EEE;
+            box-shadow:1px 1px 16px #CCC;
             cursor: pointer;
         }
         .scale-media {
@@ -55,6 +58,13 @@ main_page_head = '''
             left: 0;
             top: 0;
             background-color: white;
+        }
+        .poster-card{
+            padding:0;
+        }
+        .navbar-brand, h1, h2, h3, h4, h5{
+            font-family: Roboto, sans-serif;
+            font-weight: 900;
         }
     </style>
     <script type="text/javascript" charset="utf-8">
@@ -77,8 +87,12 @@ main_page_head = '''
         });
         // Animate in the movies when the page loads
         $(document).ready(function () {
-          $('.movie-tile').hide().first().show("fast", function showNext() {
-            $(this).next("div").show("fast", showNext);
+          $('.movie-tile-item').hide().first().show("fast", function showNext() {
+              if( $(this).next().length ){
+                $(this).next().show("fast", showNext)
+              } else {
+                $(this).closest('.tile-row').next().children().first().show("fast", showNext)
+              }
           });
         });
     </script>
@@ -113,7 +127,7 @@ main_page_content = '''
       </div>
     </div>
     <div class="container">
-      {movie_tiles}
+        {movie_tiles}
     </div>
   </body>
 </html>
@@ -122,16 +136,29 @@ main_page_content = '''
 
 # A single movie entry html template
 movie_tile_content = '''
-<div class="col-md-6 col-lg-4 movie-tile text-center" data-trailer-youtube-id="{trailer_youtube_id}" data-toggle="modal" data-target="#trailer">
-    <img src="{poster_image_url}" width="220" height="342">
-    <h2>{movie_title}</h2>
+<div class="col-md-6 movie-tile-item">
+    <div class="row">
+        <div class="col-xs-10 col-xs-offset-1 movie-tile" data-trailer-youtube-id="{trailer_youtube_id}" data-toggle="modal" data-target="#trailer">
+            <div class="row">
+                <div class="col-sm-4 col-md-5 poster-card">
+                    <img class="img-responsive center-block" src="{poster_image_url}" width="220" height="342">
+                </div>
+                <div class="col-sm-8 col-md-7">
+                    <h2>{movie_title}</h2>
+                    <p>{movie_storyline}</p>
+                    <p><button class="btn btn-primary" type="button">Watch trailer</button></p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 '''
 
 
 def create_movie_tiles_content(movies):
     # The HTML content for this section of the page
-    content = ''
+    content = '<div class="row tile-row">'
+    row_count = 0
     for movie in movies:
         # Extract the youtube ID from the url
         youtube_id_match = re.search(
@@ -144,9 +171,16 @@ def create_movie_tiles_content(movies):
         # Append the tile for the movie with its content filled in
         content += movie_tile_content.format(
             movie_title=movie.title,
+            movie_storyline=movie.storyline,
             poster_image_url=movie.poster_image_url,
             trailer_youtube_id=trailer_youtube_id
         )
+        row_count = row_count + 1
+        # When two items have been already added, create a closing and opening tag for next row
+        if row_count == 2:
+            content += '</div> <div class="row">'
+            row_count = 0
+    content += '</div>'
     return content
 
 
